@@ -26,6 +26,10 @@ class LoadingGetReportAppState extends AppStates {}
 
 class UpdateNbrSourcesAppState extends AppStates {}
 
+class ChangeDropDownValueAppState extends AppStates {}
+
+class GenerateItemsDropDownAppState extends AppStates {}
+
 class SuccessGetReportAppState extends AppStates {}
 
 class ErrorGetReportAppState extends AppStates {

@@ -35,7 +35,7 @@ class AppCubit extends Cubit<AppStates> {
   Future<void> uploadDocument({
     required TextEditingController controller,
     required BuildContext context
-}) async {
+  }) async {
 
     emit(LoadingUploadDocumentAppState());
 
@@ -157,11 +157,13 @@ class AppCubit extends Cubit<AppStates> {
 
 
   Map<String, dynamic> data = {};
+  List<String> plagiarizedTexts = [];
   List<dynamic> listOfSources = [];
+  int? firstValue;
 
   void getReport({
     required String document,
-}) {
+  }) {
 
     isRequestInProgress = true;
     startProgressTracking();
@@ -170,35 +172,24 @@ class AppCubit extends Cubit<AppStates> {
 
     DioHelper.postData(
       pathUrl: '/report',
-        data: {
-          'uploaded_document': document,
-        },
+      data: {
+        'uploaded_document': document,
+      },
     ).then((value) {
 
       data = value?.data;
+      plagiarizedTexts = [];
       listOfSources = [];
-
-      if (kDebugMode) {
-        print(data);
-      }
 
       if(data['status'] == 'success') {
 
-        listOfSources = data['sources'];
+        if(data['document_type'] == 'Plagiarized Document') {
+          firstValue = (data['plagiarism_score'] * 100).toInt();
+          if(firstValue! > 20) generateListOfItems(firstValue);
+          plagiarizedTexts = List.from(data['plagiarized_texts']);
+          listOfSources = List.from(data['sources']);
 
-        if (kDebugMode) {
-          print(listOfSources.length);
-        }
-
-        for(int i = 0; i < listOfSources.length; i++) {
-          if(listOfSources[i].isEmpty) {
-            listOfSources.removeAt(i);
-            emit(UpdateNbrSourcesAppState());
-          }
-        }
-
-        if (kDebugMode) {
-          print('After: ${listOfSources.length}');
+          checkEmptyItemList();
         }
 
         isRequestInProgress = false;
@@ -233,6 +224,59 @@ class AppCubit extends Cubit<AppStates> {
     });
 
 
+  }
+
+
+  void checkEmptyItemList() {
+    for(int i = 0; i < listOfSources.length; i++) {
+      if(listOfSources[i].isEmpty) {
+        listOfSources.removeAt(i);
+        plagiarizedTexts.removeAt(i);
+      }
+    }}
+
+
+  void changeDropValue(value) {
+    firstValue = value;
+    emit(ChangeDropDownValueAppState());
+    changeNbrTextsSources(value);
+  }
+
+
+  List<int> items = [];
+
+  void generateListOfItems(nbr) {
+    items = List<int>.generate(((nbr + 1) / 10).floor(), (index) => (index + 1) * 10) + [nbr];
+    if (kDebugMode) {
+      print(items);
+    }
+    emit(GenerateItemsDropDownAppState());
+  }
+
+
+  bool isChanging = false;
+
+  void changeNbrTextsSources(nbr) {
+    isChanging = true;
+    listOfSources = [];
+
+    if(data['plagiarism_score'] > (nbr / 100)) {
+      int nbrSent = ((nbr/100) * data['sources'].length).round();
+      if (kDebugMode) {
+        print(nbrSent);
+      }
+      for(int i = 0; i < nbrSent; i++) {
+        listOfSources.add(data['sources'][i]);
+      }
+    } else {
+      listOfSources = List.from(data['sources']);
+    }
+
+    checkEmptyItemList();
+    Future.delayed(const Duration(milliseconds: 500)).then((value) {
+      isChanging = false;
+      emit(UpdateNbrSourcesAppState());
+    });
   }
 
 

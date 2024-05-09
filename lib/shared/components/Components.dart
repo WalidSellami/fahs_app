@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
-import 'package:hexcolor/hexcolor.dart';
 import 'package:plagia_detect/shared/adaptive/loadingIndicator/LoadingIndicator.dart';
 import 'package:plagia_detect/shared/components/Constants.dart';
 import 'package:plagia_detect/shared/cubits/appCubit/AppCubit.dart';
@@ -277,57 +276,57 @@ dynamic showLoading(isDarkTheme, context, {bool isRequest = false}) => showDialo
                     padding: const EdgeInsets.all(26.0),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(18.0),
-                      color: isDarkTheme ? HexColor('141d26') : Colors.white,
+                      color: isDarkTheme ? darkIndicator : Colors.white,
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: !isRequest ? LoadingIndicator(os: getOs())
                         : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            LoadingIndicator(os: getOs(), value: (cubit.progress <= 1.0) ? cubit.progress : null,
-                              bgColor: (cubit.progress <= 1.0) ? Colors.grey.shade300 : null,),
-                            if(cubit.isRequestInProgress && cubit.progress <= 1.0) ...[
-                              FadeIn(
-                                child: const SizedBox(
-                                  height: 16.0,
-                                ),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        LoadingIndicator(os: getOs(), value: (cubit.progress <= 1.0) ? cubit.progress : null,
+                          bgColor: (cubit.progress <= 1.0) ? Colors.grey.shade300 : null,),
+                        if(cubit.isRequestInProgress && cubit.progress <= 1.0) ...[
+                          FadeIn(
+                            child: const SizedBox(
+                              height: 16.0,
+                            ),
+                          ),
+                          FadeInUp(
+                            duration: const Duration(milliseconds: 400),
+                            child: Text(
+                              'ستستغرق هذه العملية بعض الوقت،\nيرجى الانتظار ...',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12.0,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.4,
+                                height: 1.4,
+                                decoration: TextDecoration.none,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
-                              FadeInUp(
-                                duration: const Duration(milliseconds: 400),
-                                child: Text(
-                                  'ستستغرق هذه العملية بعض الوقت،\nيرجى الانتظار ...',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 12.0,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.4,
-                                    height: 1.4,
-                                    decoration: TextDecoration.none,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
+                            ),
+                          ),
+                        ],
+                        if(cubit.isRequestInProgress && (cubit.progress > 1.0)) ...[
+                          FadeIn(
+                            child: const SizedBox(
+                              height: 16.0,
+                            ),
+                          ),
+                          FadeInUp(
+                            duration: const Duration(milliseconds: 400),
+                            child: Text(
+                              'جارٍ الانتهاء ...',
+                              style: TextStyle(
+                                fontSize: 12.0,
+                                letterSpacing: 0.4,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.none,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
-                            ],
-                            if(cubit.isRequestInProgress && (cubit.progress > 1.0)) ...[
-                              FadeIn(
-                                child: const SizedBox(
-                                  height: 16.0,
-                                ),
-                              ),
-                              FadeInUp(
-                                duration: const Duration(milliseconds: 400),
-                                child: Text(
-                                  'جارٍ الانتهاء ...',
-                                  style: TextStyle(
-                                    fontSize: 12.0,
-                                    letterSpacing: 0.4,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.none,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
-                              ),
-                            ],],)),
+                            ),
+                          ),
+                        ],],)),
               ),
             ),
           );

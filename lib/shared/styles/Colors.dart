@@ -12,6 +12,8 @@ Color anotherPrimaryColor = HexColor('1c8de8');  // light blue
 
 Color darkPrimaryColor = HexColor('026ac7');
 
+Color darkIndicator = HexColor('141d26');
+
 Color greenColor = HexColor('009b9b');
 
 Color redColor = HexColor('f9325f');
