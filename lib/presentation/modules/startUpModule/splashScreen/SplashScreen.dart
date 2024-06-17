@@ -1,7 +1,7 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:plagia_detect/shared/adaptive/loadingIndicator/LoadingIndicatorKit.dart';
+import 'package:plagia_detect/shared/adaptive/loadingIndicator/LoadingIndicator.dart';
 import 'package:plagia_detect/shared/components/Components.dart';
 import 'package:plagia_detect/shared/components/Constants.dart';
 import 'package:plagia_detect/shared/cubits/checkCubit/CheckCubit.dart';
@@ -90,7 +90,7 @@ class _SplashScreenState extends State<SplashScreen> {
             children: [
               Expanded(
                 child: ZoomIn(
-                  duration: const Duration(milliseconds: 500),
+                  duration: const Duration(milliseconds: 600),
                   child: Center(
                     child: Image.asset('assets/images/logo.png',
                       height: 175.0,
@@ -116,7 +116,10 @@ class _SplashScreenState extends State<SplashScreen> {
                   height: 20.0,
                 ),
                 FadeInUp(duration: const Duration(milliseconds: 800),
-                    child: LoadingIndicatorKit(os: getOs())),
+                    child: SizedBox(
+                        width: 25.0,
+                        height: 25.0,
+                        child: LoadingIndicator(os: getOs(), strokeWidth: 3.0,))),
                 const SizedBox(
                   height: 20.0,
                 ),

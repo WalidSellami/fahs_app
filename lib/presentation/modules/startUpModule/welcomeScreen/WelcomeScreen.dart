@@ -21,6 +21,7 @@ class WelcomeScreen extends StatelessWidget {
         var checkCubit = CheckCubit.get(context);
 
         return Scaffold(
+          backgroundColor: Colors.white,
           appBar: AppBar(),
           body: Center(
             child: Column(
@@ -59,15 +60,6 @@ class WelcomeScreen extends StatelessWidget {
                           TextSpan(
                             text: 'مرحبا بك في: ',
                             children: [
-                              // const TextSpan(
-                              //   text: 'Plag',
-                              //   style: TextStyle(
-                              //     fontSize: 26.0,
-                              //     letterSpacing: 1.0,
-                              //     fontFamily: 'Varela',
-                              //     fontWeight: FontWeight.bold,
-                              //   ),
-                              // ),
                               TextSpan(
                                 text: 'Fahs',
                                 style: TextStyle(

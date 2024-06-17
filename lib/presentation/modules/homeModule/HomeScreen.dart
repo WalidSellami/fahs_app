@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'package:animate_do/animate_do.dart';
 import 'package:conditional_builder_null_safety/conditional_builder_null_safety.dart';
+import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:plagia_detect/presentation/modules/homeModule/ReportScreen.dart';
 import 'package:plagia_detect/shared/adaptive/loadingIndicator/LoadingIndicator.dart';
 import 'package:plagia_detect/shared/components/Components.dart';
@@ -13,6 +17,7 @@ import 'package:plagia_detect/shared/cubits/appCubit/AppStates.dart';
 import 'package:plagia_detect/shared/cubits/checkCubit/CheckCubit.dart';
 import 'package:plagia_detect/shared/cubits/checkCubit/CheckStates.dart';
 import 'package:plagia_detect/shared/styles/Colors.dart';
+import 'package:vibration/vibration.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -66,15 +71,50 @@ class _HomeScreenState extends State<HomeScreen> {
         curve: Curves.elasticOut,
         reverseCurve: Curves.linear,
       );
-      setState(() {
-        canPop = false;
-      });
+      setState(() {canPop = false;});
     } else {
-      setState(() {
-        canPop = true;
-      });
+      setState(() {canPop = true;});
       SystemNavigator.pop();
     }
+  }
+
+
+  void sendFeedback({
+    required String body,
+    required String subject,
+    required attachment,
+}) async {
+    final Email email = Email(
+      body: body,
+      subject: subject,
+      recipients: ['service.contact.adm@gmail.com'],
+      attachmentPaths: [attachment],
+      isHTML: false,
+    );
+
+    await FlutterEmailSender.send(email);
+
+  }
+
+
+  void onFeedback(context) {
+    BetterFeedback.of(context).show((UserFeedback feedback) async {
+      final screenshotFilePath = await writeImageToStorage(feedback.screenshot);
+      sendFeedback(body: feedback.text, subject: 'ملاحظات حول تطبيق فحص', attachment: screenshotFilePath);
+    });
+  }
+
+
+  Future<String> writeImageToStorage(Uint8List feedbackScreenshot) async {
+
+    final Directory dir = await getTemporaryDirectory();
+    final String screenshotPath = '${dir.path}/feedback.png';
+    final File screenshotFile = File(screenshotPath);
+
+    await screenshotFile.writeAsBytes(feedbackScreenshot);
+
+    return screenshotPath;
+
   }
 
 
@@ -156,7 +196,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         context: context);
                   }
 
-                  setState(() {isUploading = false;});
+                  setState(() {
+                    isUploading = false;
+                    cubit.progressExtracting = 0.0;
+                  });
                 }
 
                 if(state is SuccessUploadDocumentAppState) {
@@ -168,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       focusNode.requestFocus();
                     });
                     if(inputController.text.isNotEmpty) {
-                      if(words.length <= 10000) isVisible = true;
+                      if(words.length <= 25000) isVisible = true;
                     } else {
                       toast(
                           text: 'الملف يحتوي على تنسيق غير صالح. الرجاء التحقق من الملف أو تغييره والمحاولة مرة أخرى',
@@ -183,17 +226,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   Future.delayed(const Duration(milliseconds: 200)).then((value) {
                     toast(text: 'تم بنجاح', states: ToastStates.success, context: context);
                     Navigator.pop(context);
+                    Vibration.hasAmplitudeControl().then((hasAmplitudeControl) async {
+                      if (hasAmplitudeControl != null && hasAmplitudeControl) {
+                        await Vibration.vibrate(amplitude: 1); // Strong vibration
+                      } else {
+                        await Vibration.vibrate(); // Default vibration
+                      }
+                    });
                     Navigator.of(context).push(createSecondRoute(screen: const ReportScreen()));
                     clearResults();
-                    cubit.progress = 0.0;
+                    setState(() {cubit.progress = 0.0;});
                   });
-
                 }
 
                 if(state is ErrorGetReportAppState) {
                   toast(text: 'فشل في الحصول على التقرير، تحقق من ملفك أو اتصالك بالإنترنت وحاول مرة أخرى',
                       states: ToastStates.error, context: context);
                   clearResults();
+                  setState(() {cubit.progress = 0.0;});
                   Navigator.pop(context);
                 }
               },
@@ -212,6 +262,30 @@ class _HomeScreenState extends State<HomeScreen> {
                           'السلام عليكم!',
                         ),
                       ),
+                      actions: [
+                        FadeInLeft(
+                          duration: const Duration(seconds: 1),
+                          child: IconButton(
+                              onPressed: () {
+                                if(checkCubit.hasInternet) {
+                                  onFeedback(context);
+                                } else {
+                                  toast(text: 'لا يوجد اتصال بالإنترنت',
+                                      states: ToastStates.error,
+                                      context: context);
+                                }
+                              },
+                              icon: const Icon(
+                                Icons.feedback_rounded,
+                              ),
+                            enableFeedback: true,
+                            tooltip: 'إرسال ملاحظة',
+                          ),
+                        ),
+                        const SizedBox(
+                          width: 6.0,
+                        ),
+                      ],
                     ),
                     body: SingleChildScrollView(
                       controller: scrollController,
@@ -276,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       setState(() {
                                                         words = value.split(RegExp(r'[\s|]+'));
                                                       });
-                                                      if((words.length >= 100) && (words.length <= 10000)) {
+                                                      if((words.length >= 100) && (words.length <= 25000)) {
                                                         setState(() {isVisible = true;});
                                                       } else {
                                                         setState(() {isVisible = false;});}
@@ -297,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       if(words.length < 100){
                                                         return 'يجب ألا يقل النص عن 100 كلمة --> ${words.length - 1}/100';
                                                       }
-                                                      if(words.length > 10000) {
+                                                      if(words.length > 25000) {
                                                         return 'لقد تجاوزت الحد الأقصى المسموح به';
                                                       }
                                                     }
@@ -344,12 +418,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 child: Text(
                                                   '${(words.isNotEmpty) ?
                                                   words.length - 1 :
-                                                  words.length}/10000',
+                                                  words.length}/25000',
                                                   style: TextStyle(
                                                     fontSize: 12.0,
                                                     letterSpacing: 1.2,
                                                     fontFamily: 'Varela',
-                                                    color: (words.length > 10000) ? redColor :
+                                                    color: (words.length > 25000) ? redColor :
                                                     (isDarkTheme ? Colors.white : Colors.black),
                                                   ),
                                                 ),
@@ -431,10 +505,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         focusNode.unfocus();
                                                         if(checkCubit.hasInternet) {
                                                           if(formKey.currentState!.validate()) {
-                                                             cubit.getReport(
-                                                               document: inputController.text,
-                                                             );
-                                                             showLoading(isDarkTheme, context, isRequest: true);
+                                                            cubit.generateListOfItems(90);
+                                                            Future.delayed(const Duration(milliseconds: 100)).then((value) {
+                                                              showAlertChosenRatio(
+                                                                  isDarkTheme,
+                                                                  theme,
+                                                                  inputController.text);
+                                                            });
                                                           }
                                                         } else {
                                                           toast(text: 'لا يوجد اتصال بالإنترنت',
@@ -467,4 +544,249 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     );
   }
+
+
+  dynamic showAlertChosenRatio(isDarkTheme, ThemeData theme, String document) => showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        HapticFeedback.vibrate();
+        return BlocBuilder<AppCubit, AppStates>(
+          builder: (context, state) {
+            var cubit = AppCubit.get(context);
+            return PopScope(
+              canPop: true,
+              onPopInvoked: (v) {
+                Future.delayed(const Duration(milliseconds: 300)).then((value) {
+                  if(!cubit.isRatioChosen) cubit.clearChosenData();
+                });
+              },
+              child: FadeInRight(
+                duration: const Duration(milliseconds: 400),
+                child: AlertDialog(
+                  clipBehavior: Clip.antiAlias,
+                  title: Text.rich(
+                    TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: 'إذا كان ملفك يحتوي على ',
+                          ),
+                          TextSpan(
+                              text: 'سرقة أدبية:',
+                              style: TextStyle(
+                                fontSize: 17.0,
+                                color: redColor,
+                              ),
+                          ),
+                        ],
+                        style: const TextStyle(
+                          fontSize: 15.0,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.6,
+                        )
+                    ),
+                  ),
+                  content: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12.0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'اختر النسبة التي لا تريد تجاوزها: ',
+                                style: TextStyle(
+                                  fontSize: 12.0,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12.0,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      '%',
+                                      style: TextStyle(
+                                        fontSize: 12.0,
+                                        color: redColor,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: 2.0,
+                                    ),
+                                    defaultDropDownButton(
+                                        cubit: cubit,
+                                        isDarkTheme: isDarkTheme,
+                                        onChange: cubit.changeDropChosenValue),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 12.0,
+                        ),
+                        const Text(
+                          'ملاحظات مهمة:',
+                          style: TextStyle(
+                            fontSize: 15.0,
+                            letterSpacing: 0.6,
+                            height: 1.6,
+                            decoration: TextDecoration.underline,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text.rich(
+                            TextSpan(
+                              text: '- تتم العملية  ',
+                              children: [
+                                TextSpan(
+                                  text: 'بسرعة نوعا ما ',
+                                  style: TextStyle(
+                                    color: redColor,
+                                  ),
+                                ),
+                                const TextSpan(
+                                  text: 'إذا كانت ',
+                                ),
+                                TextSpan(
+                                  text: 'النسبة المختارة أقل من النسبة الإجمالية التي يحددها النموذج.',
+                                  style: TextStyle(
+                                    color: redColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15.0,
+                              letterSpacing: 0.2,
+                              color: isDarkTheme ?
+                              Colors.white : Colors.black,
+                              height: 1.6,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8.0,
+                          ),
+                          child: Text.rich(
+                            TextSpan(
+                              text: '- هذا لن يؤثر على ',
+                              children: [
+                                TextSpan(
+                                  text: 'النسبة الإجمالية التي يحددها النموذج ',
+                                  style: TextStyle(
+                                    color: redColor,
+                                  ),
+                                ),
+                                const TextSpan(
+                                  text: '، ولكن فقط على ',
+                                ),
+                                TextSpan(
+                                  text: 'عدد النصوص المنتحلة المستخرجة.',
+                                  style: TextStyle(
+                                    color: redColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15.0,
+                              letterSpacing: 0.2,
+                              color: isDarkTheme ?
+                              Colors.white : Colors.black,
+                              height: 1.6,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        if(CheckCubit.get(context).hasInternet) {
+                          cubit.getReport(document: document, chosenRatio: 0);
+                          Navigator.pop(dialogContext);
+                          showLoading(isDarkTheme, context, isRequest: true);
+                        } else {
+                          toast(text: 'لا يوجد اتصال بالإنترنت',
+                              states: ToastStates.error,
+                              context: context);
+                        }
+                      },
+                      child: Text(
+                        'تخطي',
+                        style: TextStyle(
+                          fontSize: 16.0,
+                          color: theme.colorScheme.primary,
+                          letterSpacing: 0.6,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if(cubit.firstValue != null)
+                      FadeIn(
+                        duration: const Duration(milliseconds: 200),
+                        child: TextButton(
+                          onPressed: () {
+                            if(CheckCubit.get(context).hasInternet) {
+                              cubit.confirmDetectRatio();
+                              cubit.getReport(document: document, chosenRatio: cubit.firstValue);
+                              Navigator.pop(dialogContext);
+                              showLoading(isDarkTheme, context, isRequest: true);
+                            } else {
+                              toast(text: 'لا يوجد اتصال بالإنترنت',
+                                  states: ToastStates.error,
+                                  context: context);
+                            }
+                          },
+                          child: Text(
+                            'تأكيد',
+                            style: TextStyle(
+                              color: greenColor,
+                              fontSize: 16.0,
+                              letterSpacing: 0.6,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

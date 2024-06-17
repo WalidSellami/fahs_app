@@ -20,11 +20,15 @@ class ErrorUploadDocumentAppState extends AppStates {
 
 // Get Report
 
+class ConfirmDetectRatioAppState extends AppStates {}
+
 class UpdateLoadingProgressAppState extends AppStates {}
 
 class LoadingGetReportAppState extends AppStates {}
 
 class UpdateNbrSourcesAppState extends AppStates {}
+
+class ChangeDropDownChosenValueAppState extends AppStates {}
 
 class ChangeDropDownValueAppState extends AppStates {}
 
@@ -40,3 +44,5 @@ class ErrorGetReportAppState extends AppStates {
 }
 
 class ClearDataReportAppState extends AppStates {}
+
+class ClearChosenDataAppState extends AppStates {}

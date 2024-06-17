@@ -7,8 +7,9 @@ class LoadingIndicator extends StatelessWidget {
   final Color? color;
   final Color? bgColor;
   final double? value;
+  final double? strokeWidth;
 
-  const LoadingIndicator({super.key, required this.os, this.color, this.bgColor, this.value});
+  const LoadingIndicator({super.key, required this.os, this.color, this.bgColor, this.value, this.strokeWidth});
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +18,7 @@ class LoadingIndicator extends StatelessWidget {
         color: color ?? Theme.of(context).colorScheme.primary,
         backgroundColor: bgColor,
         value: value,
+        strokeWidth: strokeWidth ?? 4.0,
         strokeCap: StrokeCap.round,
       );
     } else {

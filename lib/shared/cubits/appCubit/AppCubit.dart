@@ -55,7 +55,7 @@ class AppCubit extends Cubit<AppStates> {
 
         } else {
 
-          Uint8List bytes =  await compute(readFileInBackground, file.path);
+          Uint8List bytes = await compute(readFileInBackground, file.path);
 
           if (kDebugMode) {
             print('completed 1');
@@ -155,14 +155,29 @@ class AppCubit extends Cubit<AppStates> {
     });
   }
 
-
   Map<String, dynamic> data = {};
+  List<dynamic> allSources = [];
+
+
   List<String> plagiarizedTexts = [];
-  List<dynamic> listOfSources = [];
+  int totalNbrPlagiarizedTexts = 0;
+  List<dynamic> listOfValidSources = [];
   int? firstValue;
+  bool canChange = false;
+
+  bool isRatioChosen = false;
+  int nbrChosenPlagiarizedTexts = 0;
+  int maxSent = 16;
+
+  void confirmDetectRatio() {
+    isRatioChosen = true;
+    emit(ConfirmDetectRatioAppState());
+  }
+
 
   void getReport({
     required String document,
+    dynamic chosenRatio,
   }) {
 
     isRequestInProgress = true;
@@ -174,20 +189,32 @@ class AppCubit extends Cubit<AppStates> {
       pathUrl: '/report',
       data: {
         'uploaded_document': document,
+        'chosen_ratio': (chosenRatio / 100) ?? 0,
       },
     ).then((value) {
 
       data = value?.data;
+      allSources = [];
+
       plagiarizedTexts = [];
-      listOfSources = [];
+      listOfValidSources = [];
 
       if(data['status'] == 'success') {
 
         if(data['document_type'] == 'Plagiarized Document') {
-          firstValue = (data['plagiarism_score'] * 100).toInt();
-          if(firstValue! > 20) generateListOfItems(firstValue);
+          allSources = List.from(data['sources']); // main sources
+          totalNbrPlagiarizedTexts = (data['plagiarism_score'] * maxSent).round();
+
+          if(!isRatioChosen && (chosenRatio == 0)) {
+            firstValue = (data['plagiarism_score'] * 100).toInt();
+            if(firstValue! >= 20)  {
+              canChange = true;
+              generateListOfItems(firstValue);
+            }
+          }
+
           plagiarizedTexts = List.from(data['plagiarized_texts']);
-          listOfSources = List.from(data['sources']);
+          listOfValidSources = List.from(allSources);
 
           checkEmptyItemList();
         }
@@ -228,9 +255,10 @@ class AppCubit extends Cubit<AppStates> {
 
 
   void checkEmptyItemList() {
-    for(int i = 0; i < listOfSources.length; i++) {
-      if(listOfSources[i].isEmpty) {
-        listOfSources.removeAt(i);
+    for(int i = 0; i < allSources.length; i++) {
+      if(allSources[i].isEmpty) {
+        allSources.removeAt(i);
+        listOfValidSources.removeAt(i);
         plagiarizedTexts.removeAt(i);
       }
     }}
@@ -242,14 +270,22 @@ class AppCubit extends Cubit<AppStates> {
     changeNbrTextsSources(value);
   }
 
+  void changeDropChosenValue(value) {
+    firstValue = value;
+    if(kDebugMode) {
+      print(firstValue);
+    }
+    emit(ChangeDropDownChosenValueAppState());
+  }
+
 
   List<int> items = [];
 
   void generateListOfItems(nbr) {
-    items = List<int>.generate(((nbr + 1) / 10).floor(), (index) => (index + 1) * 10) + [nbr];
-    if (kDebugMode) {
-      print(items);
-    }
+    int rate = (nbr / 10).floor();
+    items = (rate + 1 < 10) ?
+    List<int>.generate(rate, (index) => (index + 1) * 10) + [nbr] :
+    List<int>.generate(rate, (index) => (index + 1) * 10);
     emit(GenerateItemsDropDownAppState());
   }
 
@@ -258,22 +294,18 @@ class AppCubit extends Cubit<AppStates> {
 
   void changeNbrTextsSources(nbr) {
     isChanging = true;
-    listOfSources = [];
+    listOfValidSources = [];
 
     if(data['plagiarism_score'] > (nbr / 100)) {
-      int nbrSent = ((nbr/100) * data['sources'].length).round();
-      if (kDebugMode) {
-        print(nbrSent);
-      }
+      int nbrSent = ((nbr/100) * maxSent).round();
       for(int i = 0; i < nbrSent; i++) {
-        listOfSources.add(data['sources'][i]);
+        listOfValidSources.add(allSources[i]);
       }
     } else {
-      listOfSources = List.from(data['sources']);
+      listOfValidSources = List.from(allSources);
     }
 
-    checkEmptyItemList();
-    Future.delayed(const Duration(milliseconds: 500)).then((value) {
+    Future.delayed(const Duration(milliseconds: 10)).then((value) {
       isChanging = false;
       emit(UpdateNbrSourcesAppState());
     });
@@ -282,8 +314,21 @@ class AppCubit extends Cubit<AppStates> {
 
   void clearData() {
     data.clear();
-    listOfSources.clear();
+    allSources.clear();
+    listOfValidSources.clear();
+    plagiarizedTexts.clear();
+    firstValue = null;
+    items.clear();
+    canChange = false;
+    isRatioChosen = false;
     emit(ClearDataReportAppState());
+  }
+
+
+  void clearChosenData() {
+    firstValue = null;
+    items.clear();
+    emit(ClearChosenDataAppState());
   }
 
 }

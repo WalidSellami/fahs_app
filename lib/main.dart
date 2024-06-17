@@ -1,3 +1,4 @@
+import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -42,7 +43,19 @@ Future<void> main() async {
     startWidget = const WelcomeScreen();
   }
 
-  runApp(MyApp(widget: startWidget,));
+
+  runApp(BetterFeedback(
+    themeMode: ThemeMode.system,
+    darkTheme: darkThemeFeedback,
+    theme: lightThemeFeedback,
+    localizationsDelegates: [
+      GlobalMaterialLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalFeedbackLocalizationsDelegate(),
+    ],
+    localeOverride: const Locale('ar'),
+      child: MyApp(widget: startWidget,)));
 
 }
 

@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:plagia_detect/shared/adaptive/loadingIndicator/LoadingIndicator.dart';
 import 'package:plagia_detect/shared/components/Components.dart';
-import 'package:plagia_detect/shared/components/Constants.dart';
 import 'package:plagia_detect/shared/cubits/appCubit/AppCubit.dart';
 import 'package:plagia_detect/shared/cubits/appCubit/AppStates.dart';
 import 'package:plagia_detect/shared/cubits/checkCubit/CheckCubit.dart';
@@ -24,10 +22,10 @@ class ReportScreen extends StatefulWidget {
 
 class _ReportScreenState extends State<ReportScreen> {
 
-  // Future<File> generatePdfInBackground(data, listOfSources) async {
+  // Future<File> generatePdfInBackground(data, listOfValidSources) async {
   //   final Completer<File> completer = Completer();
   //
-  //   await Pdf().generateDocument(data, listOfSources).then((value) {
+  //   await Pdf().generateDocument(data, listOfValidSources).then((value) {
   //       completer.complete(value);
   //     }).catchError((error) {
   //       completer.completeError(error);
@@ -58,6 +56,7 @@ class _ReportScreenState extends State<ReportScreen> {
                   var cubit = AppCubit.get(context);
 
                   var reportData = cubit.data;
+                  var plagiarismScore = (reportData['plagiarism_score'] * 100).toInt();
 
                   return PopScope(
                     onPopInvoked: (v) async {
@@ -70,14 +69,14 @@ class _ReportScreenState extends State<ReportScreen> {
                         automaticallyImplyLeading: false,
                         leading: const Icon(
                           Icons.circle,
-                          size: 12.0,
+                          size: 10.0,
                         ),
                         // leading: (reportData['document_type'] == 'Plagiarized Document') ?
                         // IconButton(
                         //   onPressed: () async {
                         //     if(checkCubit.hasInternet) {
                         //       showLoading(isDarkTheme, context);
-                        //       await generatePdfInBackground(reportData, cubit.listOfSources).then((value) async {
+                        //       await generatePdfInBackground(reportData, cubit.listOfValidSources).then((value) async {
                         //         await Future.delayed(const Duration(milliseconds: 200)).then((v) async {
                         //           Navigator.pop(context);
                         //           await Pdf.openDocument(file: value);
@@ -128,51 +127,133 @@ class _ReportScreenState extends State<ReportScreen> {
                           ),
                         ],
                       ),
-                      body: SlideInRight(
+                      body: SlideInLeft(
                         duration: const Duration(milliseconds: 800),
                         child: SingleChildScrollView(
                           clipBehavior: Clip.antiAlias,
                           physics: const BouncingScrollPhysics(),
                           child: Padding(
                             padding: const EdgeInsets.all(20.0),
-                            child: ConditionalBuilder(
-                              condition: (reportData['document_type'] != 'Unknown Document'),
-                              builder: (context) => Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(
-                                    height: 14.0,
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(
+                                  height: 14.0,
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    showScore(isDarkTheme: isDarkTheme, theme: theme,
+                                        score: reportData['original_score'], text: 'أصلي', color: greenColor),
+                                    showScore(isDarkTheme: isDarkTheme, theme: theme,
+                                        score: reportData['plagiarism_score'], text: 'منتحل', color: redColor),
+                                  ],
+                                ),
+                                const SizedBox(
+                                  height: 50.0,
+                                ),
+                                ConditionalBuilder(
+                                  condition: (reportData['document_type'] == 'Plagiarized Document') &&
+                                      (reportData['plagiarized_texts'].isNotEmpty),
+                                  builder: (context) => Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      showScore(isDarkTheme: isDarkTheme, theme: theme,
-                                          score: reportData['original_score'], text: 'أصلي', color: greenColor),
-                                      showScore(isDarkTheme: isDarkTheme, theme: theme,
-                                          score: reportData['plagiarism_score'], text: 'مسروق', color: redColor),
-                                    ],
-                                  ),
-                                  const SizedBox(
-                                    height: 50.0,
-                                  ),
-                                  ConditionalBuilder(
-                                    condition: (reportData['document_type'] == 'Plagiarized Document') &&
-                                        (reportData['plagiarized_texts'].isNotEmpty),
-                                    builder: (context) => Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      Text.rich(
+                                        TextSpan(
                                           children: [
-                                            const Text(
-                                              'عرض النصوص مع المصادر المنتحلة:',
-                                              style: TextStyle(
-                                                fontSize: 17.0,
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 0.8,
-                                              ),
+                                            const TextSpan(
+                                              text: 'العدد الإجمالي للنصوص المنتحلة: ',
                                             ),
-                                            Row(
+                                            TextSpan(
+                                              text: (cubit.isRatioChosen) ?
+                                              '${((cubit.firstValue ?? 0) < plagiarismScore) ?
+                                              cubit.totalNbrPlagiarizedTexts : cubit.listOfValidSources.length} (%$plagiarismScore)' :
+                                              '${cubit.listOfValidSources.length} (%${cubit.firstValue})',
+                                              style: TextStyle(
+                                                color: redColor,
+                                                fontFamily: 'varela',
+                                                fontWeight: FontWeight.bold,
+                                              )
+                                            ),
+                                          ]
+                                        ),
+                                        style: const TextStyle(
+                                          fontSize: 13.0,
+                                        ),
+                                      ),
+                                      if(cubit.isRatioChosen) ...[
+                                        const SizedBox(
+                                          height: 6.0,
+                                        ),
+                                        Text.rich(
+                                          TextSpan(
+                                              children: [
+                                                const TextSpan(
+                                                  text: 'العدد المراد استخراجه: ',
+                                                ),
+                                                TextSpan(
+                                                    text: '${cubit.listOfValidSources.length} (%${cubit.firstValue})',
+                                                    style: TextStyle(
+                                                      color: redColor,
+                                                      fontFamily: 'varela',
+                                                      fontWeight: FontWeight.bold,
+                                                    )
+                                                ),
+                                              ]
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 13.0,
+                                          ),
+                                        ),
+                                        const SizedBox(
+                                          height: 6.0,
+                                        ),
+                                        if((cubit.firstValue ?? 0) < plagiarismScore &&
+                                          cubit.listOfValidSources.length < cubit.totalNbrPlagiarizedTexts) ...[
+                                           const Text(
+                                             'لاستخراج كافة النصوص أعد عملية التحقق من الملف.',
+                                             style: TextStyle(
+                                               fontSize: 13.0,
+                                               fontWeight: FontWeight.bold,
+                                             ),
+                                           ),
+                                        ] else ...[
+                                          const Text(
+                                            'كل النصوص تم استخراجها.',
+                                            style: TextStyle(
+                                              fontSize: 13.0,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: MediaQuery.of(context).size.width / 6.5,
+                                          vertical: 8.0,
+                                        ),
+                                        child: Divider(
+                                          thickness: 0.5,
+                                          color: isDarkTheme ? Colors.white : Colors.black,
+                                        ),
+                                      ),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text(
+                                            'عرض النصوص مع المصادر المنتحلة:',
+                                            style: TextStyle(
+                                              fontSize: 17.0,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.8,
+                                            ),
+                                          ),
+                                          if(cubit.canChange && !cubit.isRatioChosen)
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12.0,
+                                            ),
+                                            child: Row(
                                               children: [
                                                 Text(
                                                   '%',
@@ -185,49 +266,26 @@ class _ReportScreenState extends State<ReportScreen> {
                                                 const SizedBox(
                                                   width: 2.0,
                                                 ),
-                                                DropdownButton<int>(
-                                                    value: cubit.firstValue,
-                                                    items: cubit.items.map<DropdownMenuItem<int>>((v) {
-                                                      return DropdownMenuItem<int>(
-                                                          value: v,
-                                                          child: Center(child: Text('$v')));
-                                                    }).toList(),
-                                                    elevation: 4,
-                                                    isDense: true,
-                                                    underline: Divider(
-                                                      thickness: 1.0,
-                                                      color: redColor,
-                                                      height: 0.0,
-                                                    ),
-                                                    dropdownColor: isDarkTheme ?
-                                                    darkIndicator : Colors.blue.shade50,
-                                                    borderRadius: BorderRadius.circular(8.0),
-                                                    icon: const Icon(
-                                                      Icons.keyboard_arrow_down_rounded,
-                                                    ),
-                                                    iconSize: 20.0,
-                                                    iconEnabledColor: redColor,
-                                                    style: TextStyle(
-                                                      fontSize: 14.0,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: redColor,
-                                                      fontFamily: 'Varela',
-                                                    ),
-                                                    onChanged: (value) => cubit.changeDropValue(value)),
+                                                defaultDropDownButton(
+                                                    cubit: cubit,
+                                                    isDarkTheme: isDarkTheme,
+                                                    onChange: cubit.changeDropValue),
                                               ],
                                             ),
-                                          ],
-                                        ),
-                                        const SizedBox(
-                                          height: 20.0,
-                                        ),
-                                        (!cubit.isChanging) ?
-                                        ListView.separated(
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(
+                                        height: 20.0,
+                                      ),
+                                      ConditionalBuilder(
+                                        condition: !cubit.isChanging,
+                                        builder: (context) => ListView.separated(
                                             shrinkWrap: true,
                                             physics: const NeverScrollableScrollPhysics(),
                                             itemBuilder: (context, index) => buildItemResults(
                                                 cubit.plagiarizedTexts,
-                                                cubit.listOfSources[index],
+                                                cubit.listOfValidSources[index],
                                                 index, isDarkTheme),
                                             separatorBuilder: (context, index) => Padding(
                                               padding: const EdgeInsets.symmetric(
@@ -239,117 +297,39 @@ class _ReportScreenState extends State<ReportScreen> {
                                                 color: isDarkTheme ? Colors.white : Colors.black,
                                               ),
                                             ),
-                                            itemCount: cubit.listOfSources.length) :
-                                        Center(child: Padding(
-                                          padding: const EdgeInsets.all(20.0),
-                                          child: LoadingIndicator(os: getOs()),
-                                        )),
-                                      ],
-                                    ),
-                                    fallback: (context) => Center(
-                                      child: Column(
-                                        children: [
-                                          const SizedBox(
-                                            height: 12.0,
-                                          ),
-                                          Image.asset('assets/images/checked.png',
-                                            width: 34.0,
-                                            height: 34.0,
-                                          ).animate().fadeIn().then(delay: const Duration(milliseconds: 350),
-                                              duration: const Duration(milliseconds: 600)).slide(),
-                                          const SizedBox(
-                                            height: 14.0,
-                                          ),
-                                          const Text(
-                                            'الملف أصلي، ولم يتم اكتشاف أي سرقة أدبية.',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              fontSize: 17.0,
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 0.8,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              fallback: (context) => Column(
-                                children: [
-                                  const SizedBox(
-                                    height: 14.0,
-                                  ),
-                                  CircleAvatar(
-                                    radius: 36.0,
-                                    backgroundColor: Theme.of(context).colorScheme.primary,
-                                    child: const Icon(
-                                      Icons.question_mark_rounded,
-                                      size: 40.0,
-                                      color: Colors.white,
-                                    ),
-                                  ).animate().fadeIn().then(delay: const Duration(milliseconds: 350),
-                                      duration: const Duration(milliseconds: 600)).slide(),
-                                  const SizedBox(
-                                    height: 30.0,
-                                  ),
-                                  Column(
-                                    children: [
-                                      const Text(
-                                        'ملف غير معروف',
-                                        textAlign: TextAlign.start,
-                                        style: TextStyle(
-                                          fontSize: 19.0,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.6,
-                                        ),
-                                      ),
-                                      const SizedBox(
-                                        height: 4.0,
-                                      ),
-                                      Container(
-                                        width: 66.0,
-                                        height: 1.4,
-                                        color: isDarkTheme ? Colors.white
-                                            : Colors.black,
+                                            itemCount: cubit.listOfValidSources.length),
+                                        fallback: (context) => const SizedBox.shrink(),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(
-                                    height: 30.0,
-                                  ),
-                                  Text.rich(
-                                    TextSpan(
+                                  fallback: (context) => Center(
+                                    child: Column(
                                       children: [
-                                        const TextSpan(
-                                          text: 'لا يزال نموذج ',
+                                        const SizedBox(
+                                          height: 12.0,
                                         ),
-                                        TextSpan(
-                                          text: 'فحص (مدقق الانتحال) ',
+                                        Image.asset('assets/images/checked.png',
+                                          width: 34.0,
+                                          height: 34.0,
+                                        ).animate().fadeIn().then(delay: const Duration(milliseconds: 350),
+                                            duration: const Duration(milliseconds: 600)).slide(),
+                                        const SizedBox(
+                                          height: 14.0,
+                                        ),
+                                        const Text(
+                                          'الملف أصلي، ولم يتم اكتشاف أي سرقة أدبية.',
+                                          textAlign: TextAlign.center,
                                           style: TextStyle(
-                                            color: theme.colorScheme.primary,
+                                            fontSize: 17.0,
                                             fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.8,
                                           ),
                                         ),
-                                        const TextSpan(
-                                          text: 'الخاص بنا قيد التدريب ستتحسن دقته عندما نقوم بإدخال المزيد من البيانات إليه.\n',
-                                        ),
-                                        const TextSpan(
-                                            text: 'شكرا لتفهمك و صبرك.',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            )
-                                        ),
                                       ],
-                                      style: const TextStyle(
-                                        fontSize: 16.0,
-                                        height: 1.6,
-                                        letterSpacing: 0.4,
-                                      ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -369,45 +349,45 @@ class _ReportScreenState extends State<ReportScreen> {
       horizontal: 22.0,
       vertical: 12.0,
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8.0,
-            vertical: 6.0,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8.0),
-            color: isDarkTheme ? Colors.grey.shade800.withOpacity(.8) :
-            Colors.blueGrey.shade100.withOpacity(.5),
-          ),
-          child: SelectableText(
-            '${texts[index]}',
-            style: const TextStyle(
-              fontSize: 15.0,
-              letterSpacing: 0.4,
-              height: 1.6,
+    child: FadeInLeft(
+      duration: const Duration(milliseconds: 400),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8.0,
+              vertical: 6.0,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8.0),
+              color: isDarkTheme ? Colors.grey.shade800.withOpacity(.8) :
+              Colors.blueGrey.shade100.withOpacity(.5),
+            ),
+            child: SelectableText(
+              texts[index],
+              style: const TextStyle(
+                fontSize: 15.0,
+                letterSpacing: 0.4,
+                height: 1.6,
+              ),
             ),
           ),
-        ),
-        const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Center(
-            child: Icon(
-              Icons.arrow_drop_down_sharp,
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Center(
+              child: Icon(
+                Icons.arrow_drop_down_sharp,
+              ),
             ),
           ),
-        ),
-        const SizedBox(
-          height: 8.0,
-        ),
-        Wrap(
-          clipBehavior: Clip.antiAlias,
-          runSpacing: 15.0,
-          children: sources.map((url) => buildItemSource(url)).toList(),
-        ),
-      ],
+          Wrap(
+            clipBehavior: Clip.antiAlias,
+            runSpacing: 15.0,
+            children: sources.map((url) => buildItemSource(url)).toList(),
+          ),
+        ],
+      ),
     ),
   );
 
@@ -416,9 +396,9 @@ class _ReportScreenState extends State<ReportScreen> {
     onTap: () async {
       if(CheckCubit.get(context).hasInternet) {
         await HapticFeedback.vibrate();
-        // if(!baseUrl.contains('https') || !baseUrl.contains('http')) {
-        //   baseUrl = 'https://$baseUrl';
-        // }
+        if(!baseUrl.contains('https') || !baseUrl.contains('http')) {
+          baseUrl = 'https://$baseUrl';
+        }
         await launch(baseUrl).then((value) {
           toast(
               text: '... جارٍ',
@@ -426,7 +406,7 @@ class _ReportScreenState extends State<ReportScreen> {
               context: context);
         }).catchError((error) {
           toast(
-              text: error.toString(),
+              text: '... هنالك خطأ',
               states: ToastStates.error,
               context: context);
         });
