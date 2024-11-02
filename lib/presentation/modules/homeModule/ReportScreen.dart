@@ -59,7 +59,7 @@ class _ReportScreenState extends State<ReportScreen> {
                   var plagiarismScore = (reportData['plagiarism_score'] * 100).toInt();
 
                   return PopScope(
-                    onPopInvoked: (v) async {
+                    onPopInvokedWithResult: (v, _) async {
                       await Future.delayed(const Duration(milliseconds: 300)).then((value) {
                         cubit.clearData();
                       });
@@ -400,11 +400,16 @@ class _ReportScreenState extends State<ReportScreen> {
           baseUrl = 'https://$baseUrl';
         }
         await launch(baseUrl).then((value) {
+          if(!mounted) return;
+
           toast(
               text: '... جارٍ',
               states: ToastStates.success,
               context: context);
         }).catchError((error) {
+
+          if(!mounted) return;
+
           toast(
               text: '... هنالك خطأ',
               states: ToastStates.error,

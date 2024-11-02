@@ -86,15 +86,17 @@ FeedbackThemeData lightThemeFeedback = FeedbackThemeData(
     fontFamily: 'IBMPlexSansArabic',
     fontWeight: FontWeight.bold,
     fontSize: 16.0,
+    color: Colors.black,
     letterSpacing: 0.6,
   ),
   activeFeedbackModeColor: lightPrimaryColor,
   dragHandleColor: lightPrimaryColor,
-  sheetIsDraggable: true,
+  sheetIsDraggable: false,
   bottomSheetTextInputStyle: const TextStyle(
     fontFamily: 'IBMPlexSansArabic',
     fontWeight: FontWeight.bold,
     fontSize: 14.0,
+    color: Colors.black,
     letterSpacing: 0.6,
   ),
   drawColors: [
@@ -116,16 +118,18 @@ FeedbackThemeData darkThemeFeedback = FeedbackThemeData(
   bottomSheetDescriptionStyle: const TextStyle(
     fontFamily: 'IBMPlexSansArabic',
     fontWeight: FontWeight.bold,
+    color: Colors.white,
     fontSize: 16.0,
     letterSpacing: 0.6,
   ),
   activeFeedbackModeColor: darkPrimaryColor,
   dragHandleColor: darkPrimaryColor,
-  sheetIsDraggable: true,
+  sheetIsDraggable: false,
   bottomSheetTextInputStyle: const TextStyle(
     fontFamily: 'IBMPlexSansArabic',
     fontWeight: FontWeight.bold,
     fontSize: 14.0,
+    color: Colors.white,
     letterSpacing: 0.6,
   ),
   drawColors: [

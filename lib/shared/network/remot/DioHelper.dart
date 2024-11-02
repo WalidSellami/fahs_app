@@ -8,7 +8,7 @@ class DioHelper {
 
     dio = Dio(
       BaseOptions(
-        baseUrl: 'http://your-ip-address:8000',
+        baseUrl: 'http://192.168.168.75:8000', // change it to your ip address
         receiveDataWhenStatusError: true,
         headers: {
           'Content-Type': 'application/json',

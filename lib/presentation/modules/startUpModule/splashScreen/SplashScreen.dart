@@ -30,6 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final startTime = DateTime.now();
 
     Future.delayed(const Duration(milliseconds: 1500)).then((value) {
+      if(!mounted) return;
 
       if(CheckCubit.get(context).hasInternet == true) {
 
@@ -47,6 +48,8 @@ class _SplashScreenState extends State<SplashScreen> {
             setState(() {isChecking = true;});
 
             Future.delayed(const Duration(seconds: 5)).then((value) {
+              if(!mounted) return;
+
               if(isChecking) {
                 final elapsedTime = DateTime.now().difference(startTime).inSeconds;
 
@@ -76,9 +79,11 @@ class _SplashScreenState extends State<SplashScreen> {
         if(state is CheckConnectionState) {
           if(!checkCubit.hasInternet) {
             Future.delayed(const Duration(milliseconds: 800)).then((value) {
-              setState(() {isDisconnected = true;});
-              if(isChecking) setState(() {isChecking = false;});
-              if(!isShowed) showAlertCheckConnection(context, isSplashScreen: true);
+              if(context.mounted) {
+                setState(() {isDisconnected = true;});
+                if(isChecking) setState(() {isChecking = false;});
+                if(!isShowed) showAlertCheckConnection(context, isSplashScreen: true);
+              }
             });
           }
         }
@@ -90,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen> {
             children: [
               Expanded(
                 child: ZoomIn(
-                  duration: const Duration(milliseconds: 600),
+                  duration: const Duration(milliseconds: 700),
                   child: Center(
                     child: Image.asset('assets/images/logo.png',
                       height: 175.0,
@@ -100,30 +105,39 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ),
               ),
-              if(isChecking) ...[
-                FadeInUp(
-                  duration: const Duration(milliseconds: 500),
-                  child: const Text(
-                    'جارٍ التحقق من الاتصال ...',
-                    style: TextStyle(
-                      fontSize: 15.0,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
+              AnimatedSize(
+                duration: Duration(milliseconds: 700),
+                clipBehavior: Clip.antiAlias,
+                curve: Curves.easeInOut,
+                child: Column(
+                  children: [
+                    if(isChecking) ...[
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 500),
+                        child: const Text(
+                          'جارٍ التحقق من الاتصال ...',
+                          style: TextStyle(
+                            fontSize: 15.0,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 20.0,
+                      ),
+                      FadeInUp(duration: const Duration(milliseconds: 800),
+                          child: SizedBox(
+                              width: 25.0,
+                              height: 25.0,
+                              child: LoadingIndicator(os: getOs(), strokeWidth: 3.0,))),
+                      const SizedBox(
+                        height: 20.0,
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(
-                  height: 20.0,
-                ),
-                FadeInUp(duration: const Duration(milliseconds: 800),
-                    child: SizedBox(
-                        width: 25.0,
-                        height: 25.0,
-                        child: LoadingIndicator(os: getOs(), strokeWidth: 3.0,))),
-                const SizedBox(
-                  height: 20.0,
-                ),
-              ],
+              ),
             ],
           ),
         );

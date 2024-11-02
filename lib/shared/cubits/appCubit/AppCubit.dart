@@ -167,7 +167,7 @@ class AppCubit extends Cubit<AppStates> {
 
   bool isRatioChosen = false;
   int nbrChosenPlagiarizedTexts = 0;
-  int maxSent = 16;
+  int maxSent = 20;
 
   void confirmDetectRatio() {
     isRatioChosen = true;
@@ -284,7 +284,7 @@ class AppCubit extends Cubit<AppStates> {
   void generateListOfItems(nbr) {
     int rate = (nbr / 10).floor();
     items = (rate + 1 < 10) ?
-    List<int>.generate(rate, (index) => (index + 1) * 10) + [nbr] :
+    (List<int>.generate(rate, (index) => (index + 1) * 10) + [nbr]).toSet().toList() :
     List<int>.generate(rate, (index) => (index + 1) * 10);
     emit(GenerateItemsDropDownAppState());
   }

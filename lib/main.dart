@@ -1,4 +1,5 @@
 import 'package:feedback/feedback.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -24,13 +25,13 @@ Future<void> main() async {
 
   Bloc.observer = SimpleBlocObserver();
 
-  // await DioHelper.getData(pathUrl: '/').then((value) {
-  //
-  //   if (kDebugMode) {
-  //     print(value);
-  //   }
-  //
-  // });
+  await DioHelper.getData(pathUrl: '/').then((value) {
+
+    if (kDebugMode) {
+      print(value);
+    }
+
+  });
 
 
   var isStarted = CacheHelper.getCachedData(key: 'isStarted');
@@ -43,21 +44,10 @@ Future<void> main() async {
     startWidget = const WelcomeScreen();
   }
 
-
-  runApp(BetterFeedback(
-    themeMode: ThemeMode.system,
-    darkTheme: darkThemeFeedback,
-    theme: lightThemeFeedback,
-    localizationsDelegates: [
-      GlobalMaterialLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
-      GlobalWidgetsLocalizations.delegate,
-      GlobalFeedbackLocalizationsDelegate(),
-    ],
-    localeOverride: const Locale('ar'),
-      child: MyApp(widget: startWidget,)));
+  runApp(MyApp(widget: startWidget,));
 
 }
+
 
 class MyApp extends StatelessWidget {
 
@@ -72,22 +62,34 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (BuildContext context) => AppCubit()),
         BlocProvider(create: (BuildContext context) => CheckCubit()..checkConnection()),
       ],
-      child: OverlaySupport.global(
-        child: MaterialApp(
-          locale: const Locale('ar'),
-          localizationsDelegates: const [
-            S.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: S.delegate.supportedLocales,
-          title: 'Flutter App',
-          debugShowCheckedModeBanner: false,
-          theme: lightTheme,
-          darkTheme: darkTheme,
-          themeMode: ThemeMode.system,
-          home: SplashScreen(startWidget: widget!),
+      child: BetterFeedback(
+        themeMode: ThemeMode.system,
+        darkTheme: darkThemeFeedback,
+        theme: lightThemeFeedback,
+        localizationsDelegates: [
+          GlobalMaterialLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalFeedbackLocalizationsDelegate(),
+        ],
+        localeOverride: const Locale('ar'),
+        child: OverlaySupport.global(
+          child: MaterialApp(
+            locale: const Locale('ar'),
+            localizationsDelegates: const [
+              S.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: S.delegate.supportedLocales,
+            title: 'Flutter App',
+            debugShowCheckedModeBanner: false,
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: ThemeMode.system,
+            home: SplashScreen(startWidget: widget!),
+          ),
         ),
       ),
     );

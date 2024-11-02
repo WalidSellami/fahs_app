@@ -139,6 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     inputController.dispose();
     scrollController.dispose();
+    focusNode.dispose();
     super.dispose();
   }
 
@@ -211,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       focusNode.requestFocus();
                     });
                     if(inputController.text.isNotEmpty) {
-                      if(words.length <= 25000) isVisible = true;
+                      if(words.length <= 50000) isVisible = true;
                     } else {
                       toast(
                           text: 'الملف يحتوي على تنسيق غير صالح. الرجاء التحقق من الملف أو تغييره والمحاولة مرة أخرى',
@@ -224,18 +225,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 if(state is SuccessGetReportAppState) {
                   Future.delayed(const Duration(milliseconds: 200)).then((value) {
-                    toast(text: 'تم بنجاح', states: ToastStates.success, context: context);
-                    Navigator.pop(context);
-                    Vibration.hasAmplitudeControl().then((hasAmplitudeControl) async {
-                      if (hasAmplitudeControl != null && hasAmplitudeControl) {
-                        await Vibration.vibrate(amplitude: 1); // Strong vibration
-                      } else {
-                        await Vibration.vibrate(); // Default vibration
-                      }
-                    });
-                    Navigator.of(context).push(createSecondRoute(screen: const ReportScreen()));
-                    clearResults();
-                    setState(() {cubit.progress = 0.0;});
+                    if(context.mounted) {
+                      toast(text: 'تم بنجاح', states: ToastStates.success, context: context);
+                      Navigator.pop(context);
+                      Vibration.hasAmplitudeControl().then((hasAmplitudeControl) async {
+                        if (hasAmplitudeControl != null && hasAmplitudeControl) {
+                          await Vibration.vibrate(amplitude: 1); // Strong vibration
+                        } else {
+                          await Vibration.vibrate(); // Default vibration
+                        }
+                      });
+                      Navigator.of(context).push(createSecondRoute(screen: const ReportScreen()));
+                      clearResults();
+                      setState(() {cubit.progress = 0.0;});
+                    }
                   });
                 }
 
@@ -253,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 return PopScope(
                   canPop: canPop,
-                  onPopInvoked: (v) {exit(timeBackPressed);},
+                  onPopInvokedWithResult: (v, _) {exit(timeBackPressed);},
                   child: Scaffold(
                     appBar: AppBar(
                       title: FadeInRight(
@@ -418,12 +421,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 child: Text(
                                                   '${(words.isNotEmpty) ?
                                                   words.length - 1 :
-                                                  words.length}/25000',
+                                                  words.length}/50000',
                                                   style: TextStyle(
                                                     fontSize: 12.0,
                                                     letterSpacing: 1.2,
                                                     fontFamily: 'Varela',
-                                                    color: (words.length > 25000) ? redColor :
+                                                    color: (words.length > 50000) ? redColor :
                                                     (isDarkTheme ? Colors.white : Colors.black),
                                                   ),
                                                 ),
@@ -556,7 +559,7 @@ class _HomeScreenState extends State<HomeScreen> {
             var cubit = AppCubit.get(context);
             return PopScope(
               canPop: true,
-              onPopInvoked: (v) {
+              onPopInvokedWithResult: (v, _) {
                 Future.delayed(const Duration(milliseconds: 300)).then((value) {
                   if(!cubit.isRatioChosen) cubit.clearChosenData();
                 });

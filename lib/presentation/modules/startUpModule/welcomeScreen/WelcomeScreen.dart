@@ -21,7 +21,6 @@ class WelcomeScreen extends StatelessWidget {
         var checkCubit = CheckCubit.get(context);
 
         return Scaffold(
-          backgroundColor: Colors.white,
           appBar: AppBar(),
           body: Center(
             child: Column(
