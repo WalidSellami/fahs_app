@@ -2,7 +2,7 @@
 
 A new Flutter app project --> For detecting plagiarized contents from arabic documents.
 
-UI/UX (some screens)
+UI/UX (some screens):
 
 --> (https://github.com/SellamiWalid/fahs_app/assets/119450519/d8026e98-e3d7-4764-a500-0c0d5656e587)
 
