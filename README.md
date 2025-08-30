@@ -6,7 +6,8 @@ A Flutter app designed to detect plagiarized content in Arabic documents with sm
 The backend for this app (built with FastAPI) is available here:  
 👉 [Fahs Backend Repo](https://github.com/WalidSellami/plag_check)
 
-### UI/UX
+
+## UI/UX
 
 ![1](https://github.com/SellamiWalid/fahs_app/assets/119450519/d8026e98-e3d7-4764-a500-0c0d5656e587)
 
